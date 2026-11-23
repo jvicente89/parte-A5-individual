@@ -328,6 +328,7 @@ function drawServicioFicha(doc, r, x, y, w, h, fichaNum, totalFichas){
   const col1X=innerX;
   const col2X=innerX+innerW*0.33;
   const col3X=innerX+innerW*0.72;
+  const indicativos=r.indicativos||[];
 
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
   doc.text('Unidad:', col1X, curY);
@@ -337,16 +338,24 @@ function drawServicioFicha(doc, r, x, y, w, h, fichaNum, totalFichas){
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
   doc.text('Indicativos:', col2X, curY);
   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
-  const indsTxt=(r.indicativos||[]).join(' / ');
-  doc.text(doc.splitTextToSize(indsTxt, innerW*0.36).slice(0,2), col2X+19.5, curY);
+  const indsX=col2X+19.5;
+  const indsW=col3X-indsX-2;
+  if(indicativos.length>2){
+    // Los dos primeros van en la primera línea y el tercero debajo, sin invadir SIRE.
+    doc.text(doc.splitTextToSize(indicativos.slice(0,2).join(' / '), indsW).slice(0,1), indsX, curY);
+    doc.text(doc.splitTextToSize(indicativos.slice(2).join(' / '), indsW).slice(0,1), indsX, curY+4.2);
+  }else{
+    doc.text(doc.splitTextToSize(indicativos.join(' / '), indsW).slice(0,1), indsX, curY);
+  }
 
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
   doc.text('SIRE:', col3X, curY);
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text(doc.splitTextToSize(String(r.sire&&r.sire!=='-'?r.sire:'-'), innerW*0.24).slice(0,1), col3X+11, curY);
 
+  // Si hay un tercer indicativo, bajamos un poco la fila de calle y hora.
   // Fila 2 de campos: Calle | Hora
-  curY=y+21;
+  curY=y+(indicativos.length>2?24:21);
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
   doc.text('Calle:', col1X, curY);
   doc.setFont('helvetica','normal');doc.setFontSize(8.8);doc.setTextColor(0,0,0);
