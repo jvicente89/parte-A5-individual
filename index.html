@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Parte Noche VLC">
+<meta name="theme-color" content="#0d1119">
+<link rel="manifest" href="manifest.json">
+<title>Parte Operativo Valencia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --bg:#0d1119;--card:#151b28;--line:#273148;--tx:#e8edf6;--mut:#8b97ad;--ac:#3b82f6;--ok:#34d399;--bad:#f87171
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;
+  padding-bottom:calc(20px + var(--sab));
+  background:var(--bg);color:var(--tx);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(12px + var(--sat)) 16px 12px;
+  background:var(--card);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:5
+}
+h1{font-size:17px;margin:0}
+.tag{background:#3b82f633;color:#93c5fd;border:1px solid #3b82f666;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:8px}
+#clock{color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.layout{display:grid;grid-template-columns:420px 1fr;gap:20px;padding:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card+.card{margin-top:14px}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin:10px 0 4px}
+label:first-child{margin-top:0}
+input,select,textarea{
+  width:100%;background:var(--bg);color:var(--tx);
+  border:1px solid var(--line);border-radius:8px;
+  padding:9px 10px;font-size:16px;font-family:inherit
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offset:-1px}
+textarea{resize:vertical}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+.row>.fit{flex:none}
+button{
+  background:#1d2740;color:var(--tx);border:1px solid var(--line);
+  border-radius:8px;padding:9px 13px;font:600 14px/1.2 inherit;cursor:pointer;
+  min-height:38px
+}
+button:active{transform:scale(0.99)}
+button:hover{background:#26335a}
+button.pri{background:var(--ac);border-color:var(--ac)}
+button.pri:hover{background:#2563eb}
+button.dan{color:var(--bad)}
+button.sm{padding:6px 10px;font-size:12px;min-height:32px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar input,.bar select{width:auto;flex:1;min-width:140px;font-size:14px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+th{font-size:12px;color:var(--mut);font-weight:600;background:var(--card)}
+td.nw{white-space:nowrap}
+.empty{text-align:center;color:var(--mut);padding:28px 12px}
+#toast{
+  position:fixed;bottom:calc(16px + var(--sab));left:16px;right:16px;max-width:420px;margin:0 auto;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ok);
+  padding:10px 14px;border-radius:8px;display:none;z-index:30;box-shadow:0 8px 24px #0008
+}
+#toast.err{border-left-color:var(--bad)}
+#edit{display:none;background:#f59e0b22;border:1px solid #f59e0b66;color:#fcd34d;border-radius:8px;padding:8px 10px;margin-bottom:12px;justify-content:space-between;align-items:center}
+.modal{display:none;position:fixed;inset:0;background:#000b;align-items:center;justify-content:center;z-index:20;padding:16px}
+.modal.on{display:flex}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;max-width:360px;width:100%}
+.btnlink{display:block;text-align:center;text-decoration:none;background:#1d2740;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-weight:600;margin-bottom:8px}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;gap:14px;padding:12px}
+  header{padding-left:12px;padding-right:12px}
+}
+@media print{header,.form,.bar,td.act,th.act{display:none!important}body{background:#fff;color:#000}.card{border:0}th,td{color:#000;border:1px solid #333}th{position:static;background:#e2e8f0}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1 style="display:inline">Parte Operativo Valencia</h1><span class="tag">TURNO: NOCHE</span></div>
+  <div id="clock"></div>
+</header>
+
+<div class="layout">
+  <section class="form">
+    <form id="f" class="card" autocomplete="off">
+      <div id="edit"><span>Editando actuación</span><button type="button" class="sm" id="cancelEdit">Cancelar</button></div>
+
+      <label for="fecha">Fecha</label>
+      <div class="row"><input type="date" id="fecha" required><button type="button" class="fit sm" id="hoy">Hoy</button></div>
+
+      <label for="unidad">Unidad / Patrulla</label>
+      <select id="unidad"><option>7-40</option><option>7-50</option><option>7-51</option><option>7-52</option><option>Malva 50</option><option value="__M">Manual...</option></select>
+      <input id="unidadMan" placeholder="Escribe la unidad o patrulla" style="display:none;margin-top:6px">
+
+      <label>Indicativos (mínimo 2)</label>
+      <div id="inds"></div>
+      <button type="button" class="sm" id="addInd" style="margin-top:6px">+ Añadir indicativo</button>
+
+      <label for="calle">Calle de Valencia</label>
+      <input id="calle" list="dlCalle" placeholder="Escribe para buscar (Colón, Aragón, Manuel...)" required>
+      <datalist id="dlCalle"></datalist>
+      <select id="calleSel" style="margin-top:6px"></select>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="sm" id="cargarCalles">Cargar callejero oficial de Valencia</button>
+        <button type="button" class="sm" id="importCalles">Importar archivo</button>
+        <input type="file" id="fileCalles" accept=".csv,.json,.txt" style="display:none">
+      </div>
+      <div id="callesInfo" style="color:var(--mut);font-size:12px;margin-top:4px"></div>
+
+      <label for="portal">Nº / portal / tramo (opcional)</label>
+      <input id="portal" placeholder="Ej. nº 14, esq. Colón">
+
+      <div class="row" style="margin-top:10px">
+        <div><label for="hi">Hora inicio (24h)</label><div class="row"><input type="time" id="hi" required><button type="button" class="fit sm" data-now="hi">Ahora</button></div></div>
+        <div><label for="hf">Hora fin (24h)</label><div class="row"><input type="time" id="hf"><button type="button" class="fit sm" data-now="hf">Ahora</button></div></div>
+      </div>
+
+      <label for="sire">Número SIRE</label>
+      <input id="sire" inputmode="numeric">
+
+      <label for="actSel">Actuación</label>
+      <select id="actSel">
+        <option value="">-- Seleccionar actuación --</option>
+        <option>Sin novedad</option>
+        <option>Vigilancia actos incívicos - sin novedad</option>
+        <option>Vigilancia centro de aves - sin novedad</option>
+        <option>Vigilancia ocio nocturno - sin novedad</option>
+        <option>Vigilancia vehículos mal estacionados - sin novedad</option>
+        <option>Identificar persona sospechosa</option>
+      </select>
+      <textarea id="act" rows="3" required style="margin-top:6px" placeholder="Elige arriba o escribe libremente"></textarea>
+
+      <div class="row" style="margin-top:14px">
+        <button type="button" id="limpiar" class="fit">Limpiar</button>
+        <button type="submit" class="pri" id="save">Guardar actuación</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="bar">
+      <input id="q" placeholder="Filtrar por unidad, calle o SIRE...">
+      <select id="turnoSel"></select>
+      <select id="fu"><option value="">Todas las unidades</option></select>
+      <span id="count" style="color:var(--mut);font-size:13px"></span>
+    </div>
+    <div class="bar" style="margin-top:10px">
+      <button class="pri" id="pdf">Exportar PDF</button>
+      <button id="pdfShare">Compartir PDF</button>
+      <button id="csv">Exportar CSV</button>
+      <button id="copy">Copiar parte</button>
+      <button id="print">Imprimir</button>
+      <button class="dan" id="clearAll" style="margin-left:auto">Vaciar turno</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Unidad</th><th>Indicativos</th><th>Hora</th><th>Lugar</th><th>SIRE</th><th>Actuación</th><th class="act"></th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+    <div id="empty" class="empty" style="display:none">Todavía no hay actuaciones en este turno. Rellena el formulario y pulsa Guardar actuación.</div>
+  </section>
+</div>
+
+<div id="modal" class="modal"><div class="box"><h3 id="mTitle" style="margin:0 0 6px"></h3><p id="mText" style="color:var(--mut);margin:0 0 16px"></p><div class="row"><button type="button" id="mNo">Cancelar</button><button type="button" class="dan" id="mYes">Borrar</button></div></div></div>
+<div id="pdfModal" class="modal"><div class="box">
+  <h3 style="margin:0 0 6px">PDF listo</h3>
+  <p id="pdfName" style="color:var(--mut);margin:0 0 14px;word-break:break-all"></p>
+  <button type="button" class="pri" id="pdfShareBtn" style="width:100%;margin-bottom:8px">Guardar en Archivos / Compartir</button>
+  <a id="pdfOpen" class="btnlink" target="_blank" rel="noopener">Abrir PDF</a>
+  <a id="pdfDl" class="btnlink">Descargar</a>
+  <button type="button" id="pdfClose" style="width:100%">Cerrar</button>
+</div></div>
+<div id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const INDS=["17.472","22.924","21.562","21.742","21.671","22.559","814.125","22.749","23.233","814.145","814.119","814.141","21.697"];
+let CALLES=["Avinguda de Jesús Morante Borràs", "Avinguda de l'Enginyer Manuel Soto", "Avinguda de la Malva-rosa", "Avinguda de la Ronda de Natzaret", "Avinguda de Manuel Soto", "Avinguda del Port", "Avinguda dels Tarongers", "Beteró", "Carrer d'Abastos", "Carrer d'Agustí Alaman i Rodrigo", "Carrer d'Alberto García Esteve", "Carrer d'Alcossebre", "Carrer d'Algemesí", "Carrer d'Almirall Cruïlles", "Carrer d'Amalio Gimeno", "Carrer d'Antoni Joan", "Carrer d'Antonio Ponz", "Carrer d'Arnau de Vilanova", "Carrer d'Empar", "Carrer d'Empar Ballester", "Carrer d'Empar Guillem", "Carrer d'En Vicent Gallart", "Carrer d'En Vicent Guillot (Tio Bola)", "Carrer d'Ernesto Anastasio", "Carrer d'Escalante", "Carrer d'Espadà", "Carrer d'Esteve Ballester", "Carrer d'Estivella", "Carrer d'Eugènia Viñes", "Carrer d'Ignacio Zuloaga", "Carrer d'Isaac Peral.", "Carrer d'Isabel de Villena", "Carrer d'Isabel Nebrada", "Carrer d'Omet", "Carrer d'Oset", "Carrer d'Otumba", "Carrer de Baix de la Mar", "Carrer de Begís", "Carrer de Benassal", "Carrer de Beniflà", "Carrer de Beniopa", "Carrer de Benissoda", "Carrer de Berenguer Montoliu", "Carrer de Bernabé García", "Carrer de Bolbait", "Carrer de Canalejas", "Carrer de Carles Ros", "Carrer de Carlos Pau Español", "Carrer de Caudiel", "Carrer de Cavite", "Carrer de Consol", "Carrer de Cristòfol Llorens", "Carrer de Cura Monzó", "Carrer de Dalt de la Mar", "Carrer de Donís Roselló", "Carrer de Felip de Gauna", "Carrer de Felip Vives de Canyamars", "Carrer de Felipe Salvador", "Carrer de Fernando Morais de la Horra", "Carrer de Fontilles", "Carrer de Francesc Baldomà", "Carrer de Francesc Cubells", "Carrer de Francesc de Bellvís", "Carrer de Francesc Eiximenis", "Carrer de Francesc Miralles", "Carrer de Francisco Baldomà", "Carrer de Francisco Falcons", "Carrer de Fuenterrobles", "Carrer de Fuerteventura", "Carrer de Gran Canària", "Carrer de Guillem Escrivà", "Carrer de Jacinta Gil Roncales", "Carrer de Jaime Villanueva", "Carrer de Jarafuel", "Carrer de Jeroni de Montsoriu", "Carrer de Jesús Nazareno", "Carrer de Joan Baptista Perales", "Carrer de Joan Castaño Caparrós", "Carrer de Joan Genovés", "Carrer de Joan Mercader", "Carrer de Joan Soriano i Esteve", "Carrer de Jordi de Sant Jordi", "Carrer de José Aguirre", "Carrer de José Ballester Gozalvo", "Carrer de José Luis Hidalgo", "Carrer de José Manaut Viglietti", "Carrer de José María Cervera Lloret", "Carrer de José María Haro", "Carrer de Josep Ballester", "Carrer de Josep Benlliure", "Carrer de Josep Soler Carnicer", "Carrer de Juan Bautista Llovera", "Carrer de Juan Gil Albert", "Carrer de Juan Verdeguer", "Carrer de Just Vilar", "Carrer de l'Abadia del Rosari", "Carrer de l'Actor Mauri", "Carrer de l'Alcalde Cano Coloma", "Carrer de l'Alegria", "Carrer de l'Alqueria del Favero", "Carrer de l'Arquebisbe Company", "Carrer de l'Arquitecte Alfaro", "Carrer de l'Arquitecte Guastavino", "Carrer de l'Enginyer Fausto Elío", "Carrer de l'Enginyer Manuel Maese", "Carrer de l'Enginyer Rafael Janini", "Carrer de l'Escultor Alfons Gabino", "Carrer de l'Escultor Piquer", "Carrer de l'Església del Rosari", "Carrer de l'Espoló de Cantarranes", "Carrer de l'Estacioneta", "Carrer de l'Historiador Coloma", "Carrer de l'Ifach", "Carrer de l'Illa de Hierro", "Carrer de l'Imatger Bussi", "Carrer de la Barraca", "Carrer de la Creu", "Carrer de la Creu del Canyamelar", "Carrer de la Floresta", "Carrer de la Font d'en Carròs", "Carrer de la Font de Sant Lluís", "Carrer de la Font Podrida", "Carrer de la Fusta", "Carrer de la Gomera", "Carrer de la Llibertat", "Carrer de la Llum", "Carrer de la Macarena", "Carrer de la Mare de Déu de Loreto", "Carrer de la Mare de Déu del Puig", "Carrer de la Mare de Déu del Sufragi", "Carrer de la Mare de Déu dels Reis", "Carrer de la Marina", "Carrer de la Mediterrània", "Carrer de la Navardera", "Carrer de la Pau", "Carrer de la Peanya", "Carrer de la Punta al Mar", "Carrer de la Reina", "Carrer de la Reina Na Germana", "Carrer de la Remunta", "Carrer de la Sèquia de l'Or", "Carrer de la Séquia de la Cadena", "Carrer de la Sèquia de Vera", "Carrer de la Serradora", "Carrer de la Soneja", "Carrer de la Unió", "Carrer de Lanzarote", "Carrer de Las Palmas", "Carrer de les Cases de Lanuza", "Carrer de les Columbretes", "Carrer de les Drassanes", "Carrer de les Flors", "Carrer de les Moreres", "Carrer de Lluís Despuig", "Carrer de Lucio del Valle", "Carrer de Luis Simarro", "Carrer de Manuel Andrés", "Carrer de Manuel Carboneres", "Carrer de Manuela Estellés", "Carrer de Margarita Salas", "Carrer de Maria Carbonell", "Carrer de Marià Cuber", "Carrer de María Moliner", "Carrer de Martí Grajales", "Carrer de Martínez Bàguena", "Carrer de Massanassa", "Carrer de Méndez Núñez", "Carrer de Mendizábal", "Carrer de Montanejos", "Carrer de Montant", "Carrer de Montroi", "Carrer de Moraira", "Carrer de Museros", "Carrer de Navaixes", "Carrer de Pere de València", "Carrer de Peregrín Casanova", "Carrer de Pilar Hernández", "Carrer de Ramon de Rocafull", "Carrer de Sánchez Coello", "Carrer de Sant Francesc de Paula", "Carrer de Sant Joan", "Carrer de Sant Joan de Déu", "Carrer de Sant Josep de la Vega", "Carrer de Sant Pasqual", "Carrer de Sant Pere", "Carrer de Sant Rafael", "Carrer de Sant Roc", "Carrer de Sant Vicent", "Carrer de Santa Pola", "Carrer de Stella Maris", "Carrer de Suïssa", "Carrer de Tabarca", "Carrer de Torreblanca", "Carrer de Vicent Aguilera Cerni", "Carrer de Vicent Ballester", "Carrer de Vicent Brull", "Carrer de Vicent la Roda", "Carrer de Vidal Canelles", "Carrer de Vidal de Blanes", "Carrer de Vilanova i Piera", "Carrer de Xulilla", "Carrer de Yáñez de la Almedina", "Carrer del Beat Juan Grande", "Carrer del Bello", "Carrer del Bloc dels Portuaris", "Carrer del Camí de la Punta al Mar", "Carrer del Camí del Cabanyal", "Carrer del Canonge Rocafull", "Carrer del Castell de Pop", "Carrer del Coll de Rates", "Carrer del Comte d'Alaquàs", "Carrer del Comte d'Almenara", "Carrer del Comte de Melito", "Carrer del Crist del Grau", "Carrer del Cura Planelles", "Carrer del Doctor Álvaro López", "Carrer del Doctor Josep Joan Dòmine", "Carrer del Doctor Josep Juan Dòmine", "Carrer del Doctor Lluch", "Carrer del Doctor Marcos Sopena", "Carrer del Ferro", "Carrer del Forn del Cabanyal", "Carrer del Guitarrista Tárrega", "Carrer del Llavador", "Carrer del Marí Blas de Lezo", "Carrer del Marí Sirera", "Carrer del Marqués de Guadalest", "Carrer del Mascarat", "Carrer del Mediterrani", "Carrer del Millars", "Carrer del Parc de Natzaret", "Carrer del Pare Antón Martín", "Carrer del Pare Lluís Navarro", "Carrer del Pare Pedro Velasco", "Carrer del Pare Porta", "Carrer del Pare Tomàs de Montañana", "Carrer del Pintor Dalmau", "Carrer del Pintor Ferrandis", "Carrer del Pintor Ferrer Calatayud", "Carrer del Pintor Maella", "Carrer del Pintor Parra", "Carrer del Poeta Sanmartín i Aguirre", "Carrer del Progrés", "Carrer del Riu Cènia", "Carrer del Riu Cervol", "Carrer del Riu Ebre", "Carrer del Riu Jalón", "Carrer del Riu Jiloca", "Carrer del Riu Odiel", "Carrer del Riu Pisuerga", "Carrer del Riu Segura", "Carrer del Riu Sil", "Carrer del Riu Tajo", "Carrer del Riu Túria", "Carrer del Riu Xúquer", "Carrer del Riuet", "Carrer del Rosari", "Carrer del Sec", "Carrer del Sol", "Carrer del Teatre de la Marina", "Carrer del Teide", "Carrer dels Àngels", "Carrer dels Cocoters", "Carrer dels Pescadors", "Carrer Major de Natzaret", "El Cabanyal-Canyamelar", "El Grau", "La Malva-rosa", "Natzaret", "Passatge d'Àngels i Federic", "Passeig de Neptú", "Passeig Marítim", "Plaça Carola Reig Salvà", "Plaça de Calabuig", "Plaça de Joan Antoni Benlliure", "Plaça de l'Orotava", "Plaça de la Creu del Canyamelar", "Plaça de la Mare de Déu de Vallivana", "Plaça de la Mare de Déu del Castell", "Plaça de la Setmana Santa Marinera", "Plaça de les Hores", "Plaça del Cronista Francesc Momblanch", "Plaça del Doctor Llorenç de la Flor", "Plaça del Llibertador Simón Bolívar", "Plaça del Rosari", "Plaça del Tribunal de les Aigües", "Plaça dels Homes de la Mar", "Plaça José María Orense", "Plaça Mestre Ripoll", "Plaça Pintor Anglada"];
+const UNIDADES=["7-40","7-50","7-51","7-52","Malva 50"];
+let sala=(new URLSearchParams(location.search).get('sala')||'cadencia A').trim()||'cadencia A';
+let recs=[], editId=null;
+
+const key=()=>'parte_noche_'+sala.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+const load=()=>{try{recs=JSON.parse(localStorage.getItem(key()))||[]}catch(e){recs=[]}};
+const persist=()=>{try{localStorage.setItem(key(),JSON.stringify(recs))}catch(e){toast('No se pudo guardar en el equipo',1)}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fES=iso=>iso?iso.split('-').reverse().join('/'):'';
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function toast(m,err){const t=$('toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2500)}
+function nowHM(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+
+/* Unidad */
+function getUnidad(){return $('unidad').value==='__M'?$('unidadMan').value.trim():$('unidad').value}
+function setUnidad(v){const k=[...$('unidad').options].some(o=>o.value===v&&o.value!=='__M');$('unidad').value=k?v:'__M';$('unidadMan').value=k?'':v;$('unidadMan').style.display=k?'none':'block'}
+$('unidad').onchange=()=>{const m=$('unidad').value==='__M';$('unidadMan').style.display=m?'block':'none';if(m)$('unidadMan').focus()};
+
+/* Indicativos */
+function addInd(v=''){
+  const known=INDS.includes(v),w=document.createElement('div');w.style.marginBottom='8px';
+  w.innerHTML=`<div class="row"><select class="indsel"><option value="">-- Seleccionar indicativo --</option>${INDS.map(i=>`<option ${i===v?'selected':''}>${i}</option>`).join('')}<option value="__M" ${v&&!known?'selected':''}>Manual...</option></select></div><input class="indman" placeholder="Escribe el indicativo" value="${v&&!known?esc(v):''}" style="margin-top:4px;display:${v&&!known?'block':'none'}">`;
+  const sel=w.querySelector('select'),man=w.querySelector('.indman');
+  sel.onchange=()=>{man.style.display=sel.value==='__M'?'block':'none';if(sel.value==='__M')man.focus()};
+  if($('inds').children.length>=2){const b=document.createElement('button');b.type='button';b.className='fit sm dan';b.textContent='Quitar';b.onclick=()=>w.remove();w.firstChild.appendChild(b)}
+  $('inds').appendChild(w);
+}
+function setInds(list){$('inds').innerHTML='';const n=Math.max(2,list.length);for(let k=0;k<n;k++)addInd(list[k]||'')}
+const getInds=()=>[...$('inds').children].map(w=>{const v=w.querySelector('select').value;return v==='__M'?w.querySelector('.indman').value.trim():v}).filter(Boolean);
+
+/* Formulario */
+function resetForm(keepDate){
+  editId=null;$('edit').style.display='none';$('save').textContent='Guardar actuación';
+  if(!keepDate)$('fecha').value=today();
+  setUnidad('7-40');setInds([]);$('calle').value='';$('calleSel').value='';$('portal').value='';
+  $('hi').value=nowHM();$('hf').value='';$('sire').value='';$('actSel').value='';$('act').value='';
+}
+$('f').addEventListener('submit',e=>{
+  e.preventDefault();
+  const inds=getInds();
+  if(!inds.length){toast('Indica al menos un indicativo',1);return}
+  const calle=$('calle').value.trim(),portal=$('portal').value.trim();
+  const r={id:editId||('r'+Date.now()),fechaISO:$('fecha').value,unidad:getUnidad(),indicativos:inds,calle,portal,
+    lugar:portal?calle+', '+portal:calle,hi:$('hi').value,hf:$('hf').value||'--:--',sire:$('sire').value.trim()||'-',actuacion:$('act').value.trim(),ts:Date.now()};
+  if(editId){recs=recs.map(x=>x.id===editId?r:x);toast('Actuación actualizada')}else{recs.push(r);toast('Actuación guardada')}
+  persist();resetForm(true);render();
+});
+$('limpiar').onclick=()=>{resetForm();toast('Formulario limpiado')};
+$('cancelEdit').onclick=()=>resetForm(true);
+$('hoy').onclick=()=>$('fecha').value=today();
+document.querySelectorAll('[data-now]').forEach(b=>b.onclick=()=>$(b.dataset.now).value=nowHM());
+$('addInd').onclick=()=>addInd('');
+$('actSel').onchange=e=>{if(e.target.value)$('act').value=e.target.value};
+
+function edit(id){
+  const r=recs.find(x=>x.id===id);if(!r)return;
+  editId=id;$('fecha').value=r.fechaISO;setUnidad(r.unidad);setInds(r.indicativos);
+  $('calle').value=r.calle;$('portal').value=r.portal||'';$('hi').value=r.hi;$('hf').value=r.hf==='--:--'?'':r.hf;
+  $('sire').value=r.sire==='-'?'':r.sire;$('act').value=r.actuacion;$('actSel').value='';
+  $('edit').style.display='flex';$('save').textContent='Actualizar actuación';window.scrollTo({top:0,behavior:'smooth'});
+}
+let askCb=null;
+function ask(t,m,cb){$('mTitle').textContent=t;$('mText').textContent=m;askCb=cb;$('modal').classList.add('on')}
+function closeAsk(){$('modal').classList.remove('on');askCb=null}
+function del(id){ask('¿Eliminar actuación?','Se borrará este registro del turno.',()=>{recs=recs.filter(x=>x.id!==id);persist();render();toast('Actuación eliminada')})}
+
+/* Listado */
+function addDays(iso,n){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+const turnoDe=r=>r.hi<'12:00'?addDays(r.fechaISO,-1):r.fechaISO;
+const turnoAhora=()=>nowHM()<'12:00'?addDays(today(),-1):today();
+const turnoTxt=d=>'Noche '+fES(d)+' (21:45 a 06:15 del '+fES(addDays(d,1))+')';
+let turnoElegido=turnoAhora();
+const clave=r=>(r.hi<'12:00'?'1':'0')+r.hi;
+const sorted=()=>[...recs].sort((a,b)=>turnoDe(a).localeCompare(turnoDe(b))||clave(a).localeCompare(clave(b)));
+function fillTurnos(){
+  const set=new Set(recs.map(turnoDe));set.add(turnoAhora());
+  const ds=[...set].sort().reverse();
+  $('turnoSel').innerHTML='<option value="">Todos los turnos</option>'+ds.map(d=>`<option value="${d}">${esc(turnoTxt(d))}</option>`).join('');
+  $('turnoSel').value=(turnoElegido===''||set.has(turnoElegido))?turnoElegido:'';
+}
+$('turnoSel').onchange=e=>{turnoElegido=e.target.value;render()};
+function filtered(){
+  const q=norm($('q').value),u=$('fu').value,t=turnoElegido;
+  return sorted().filter(r=>(!t||turnoDe(r)===t)&&(!u||r.unidad===u)&&(!q||norm([r.unidad,r.indicativos.join(' '),r.lugar,r.sire,r.actuacion].join(' ')).includes(q)));
+}
+function render(){
+  fillTurnos();
+  const list=filtered();
+  $('count').textContent=list.length===recs.length?recs.length+' registros':list.length+' de '+recs.length;
+  $('empty').style.display=recs.length?'none':'block';
+  $('tb').innerHTML=list.map(r=>`<tr><td class="nw">${fES(r.fechaISO)}</td><td><b>${esc(r.unidad)}</b></td><td>${esc(r.indicativos.join(' / '))}</td><td class="nw">${esc(r.hi)} - ${esc(r.hf)}</td><td>${esc(r.lugar)}</td><td>${esc(r.sire)}</td><td>${esc(r.actuacion)}</td><td class="act nw"><button class="sm" onclick="edit('${r.id}')">Editar</button> <button class="sm dan" onclick="del('${r.id}')">Borrar</button></td></tr>`).join('');
+}
+$('q').oninput=render;$('fu').onchange=render;
+
+/* Exportar */
+function nombreBase(){
+  const f=d=>d.split('-').reverse().join('-');
+  return turnoElegido?'Parte de servicios '+f(turnoElegido)+' (turno 21.45-06.15)':'Parte de servicios (todos los turnos)';
+}
+let pdfUrl=null,pdfFile=null,pdfBlob=null,pdfNombre='';
+function mostrarPDF(blob,nombre){
+  if(pdfUrl)URL.revokeObjectURL(pdfUrl);
+  pdfBlob=blob;pdfNombre=nombre;pdfUrl=URL.createObjectURL(blob);pdfFile=new File([blob],nombre,{type:'application/pdf'});
+  $('pdfName').textContent=nombre;$('pdfOpen').href=pdfUrl;$('pdfDl').href=pdfUrl;$('pdfDl').download=nombre;
+  $('pdfModal').classList.add('on');
+}
+function exportPDF(share){try{exportPDFraw(share)}catch(e){console.error(e);toast('Error al generar el PDF: '+(e.message||e),1)}}
+
+function drawServicioFicha(doc, r, x, y, w, h, fichaNum, totalFichas){
+  const pad=4;
+  const innerX=x+pad, innerW=w-pad*2;
+
+  // Cabecera de ficha: Turno y Día/Fecha
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(15,23,42);
+  doc.text('Turno: NOCHE', innerX, y+5);
+  doc.text('Día: '+fES(r.fechaISO), innerX+innerW*0.42, y+5);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100,116,139);
+  doc.text('Servicio '+fichaNum+'/'+totalFichas, innerX+innerW, y+5, {align:'right'});
+
+  doc.setDrawColor(148,163,184);
+  doc.setLineWidth(0.25);
+  doc.line(innerX, y+7.2, innerX+innerW, y+7.2);
+
+  // Fila 1 de campos: Unidad | Indicativos | SIRE
+  let curY=y+12;
+  const col1X=innerX;
+  const col2X=innerX+innerW*0.33;
+  const col3X=innerX+innerW*0.72;
+
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
+  doc.text('Unidad:', col1X, curY);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text(doc.splitTextToSize(String(r.unidad||''), innerW*0.30).slice(0,1), col1X+14.5, curY);
+
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
+  doc.text('Indicativos:', col2X, curY);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
+  const indsTxt=(r.indicativos||[]).join(' / ');
+  doc.text(doc.splitTextToSize(indsTxt, innerW*0.36).slice(0,2), col2X+19.5, curY);
+
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
+  doc.text('SIRE:', col3X, curY);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text(doc.splitTextToSize(String(r.sire&&r.sire!=='-'?r.sire:'-'), innerW*0.24).slice(0,1), col3X+11, curY);
+
+  // Fila 2 de campos: Calle | Hora
+  curY=y+21;
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
+  doc.text('Calle:', col1X, curY);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.8);doc.setTextColor(0,0,0);
+  const calleLines=doc.splitTextToSize(String(r.lugar||''), innerW*0.56).slice(0,2);
+  doc.text(calleLines, col1X+11.5, curY);
+
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(30,41,59);
+  doc.text('Hora:', col3X, curY);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.8);doc.setTextColor(0,0,0);
+  const horaTxt=(r.hi||'')+(r.hf&&r.hf!=='--:--'?' - '+r.hf:'');
+  doc.text(doc.splitTextToSize(horaTxt, innerW*0.24).slice(0,1), col3X+11, curY);
+
+  // Recuadro inferior: Actuación
+  const boxTop=y+27.5;
+  const boxBottom=y+h-pad;
+  const boxH=Math.max(18, boxBottom-boxTop);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(30,41,59);
+  doc.text('Actuación:', innerX, boxTop+3.5);
+
+  const frameTop=boxTop+5;
+  const frameH=Math.max(12, boxBottom-frameTop);
+  doc.setDrawColor(30,64,175);
+  doc.setLineWidth(0.45);
+  doc.rect(innerX, frameTop, innerW, frameH);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.8);
+  doc.setTextColor(15,23,42);
+  const actLines=doc.splitTextToSize(String(r.actuacion||''), innerW-5);
+  const maxLines=Math.max(1, Math.floor((frameH-4)/3.8));
+  const shown=actLines.slice(0,maxLines);
+  if(actLines.length>maxLines){
+    shown[maxLines-1]=shown[maxLines-1].replace(/.{0,3}$/,'...');
+  }
+  doc.text(shown, innerX+2.5, frameTop+4);
+}
+
+function exportPDFraw(share){
+  const list=filtered();
+  if(!list.length){toast('No hay actuaciones para exportar',1);return}
+  if(!window.jspdf){toast('No se cargó el generador de PDF. Comprueba la conexión.',1);return}
+  const {jsPDF}=window.jspdf;
+  // Tamaño A5 vertical (148mm x 210mm) con 2 servicios por página
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a5'});
+  const pageW=148, pageH=210;
+  const marginX=5, marginTop=5, marginBottom=5, gap=4;
+  const slotW=pageW-marginX*2;
+  const slotH=(pageH-marginTop-marginBottom-gap)/2;
+
+  for(let i=0;i<list.length;i++){
+    if(i>0 && i%2===0)doc.addPage('a5','portrait');
+    const slotIdx=i%2;
+    const y=marginTop+slotIdx*(slotH+gap);
+    drawServicioFicha(doc, list[i], marginX, y, slotW, slotH, i+1, list.length);
+
+    if(slotIdx===0 && i+1<list.length){
+      const sepY=marginTop+slotH+gap/2;
+      doc.setDrawColor(148,163,184);
+      doc.setLineDashPattern([2,2],0);
+      doc.setLineWidth(0.25);
+      doc.line(marginX, sepY, pageW-marginX, sepY);
+      doc.setLineDashPattern([],0);
+    }
+  }
+
+  const blob=doc.output('blob'),nombre=nombreBase()+'.pdf';
+  const file=new File([blob],nombre,{type:'application/pdf'});
+  if(share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:nombre}).catch(()=>{});
+    return;
+  }
+  mostrarPDF(blob,nombre);
+}
+function exportCSV(){
+  const list=filtered();if(!list.length){toast('No hay actuaciones para exportar',1);return}
+  const h=['Fecha','Turno','Unidad','Indicativos','Hora inicio','Hora fin','Lugar','SIRE','Actuación'];
+  const rows=list.map(r=>[fES(r.fechaISO),'NOCHE',r.unidad,r.indicativos.join(' / '),r.hi,r.hf,r.lugar,r.sire,r.actuacion.replace(/\r?\n/g,' ')].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';'));
+  const blob=new Blob(['\uFEFF'+[h.join(';'),...rows].join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombreBase()+'.csv';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('CSV descargado');
+}
+function copyParte(){
+  const list=filtered();if(!list.length){toast('No hay actuaciones para copiar',1);return}
+  const txt=['PARTE OPERATIVO VALENCIA - TURNO: NOCHE','',...list.map((r,i)=>`${i+1}. ${fES(r.fechaISO)} | Unidad ${r.unidad} | Indicativos ${r.indicativos.join(' / ')}\n   Hora: ${r.hi} - ${r.hf} | SIRE: ${r.sire}\n   Lugar: ${r.lugar}\n   Actuación: ${r.actuacion}`)].join('\n');
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Parte copiado')).catch(()=>toast('No se pudo copiar',1));
+}
+$('pdf').onclick=()=>exportPDF(false);
+$('pdfShare').onclick=()=>exportPDF(true);
+$('csv').onclick=exportCSV;$('copy').onclick=copyParte;$('print').onclick=()=>window.print();
+$('clearAll').onclick=()=>{if(!recs.length){toast('No hay actuaciones que borrar',1);return}ask('¿Vaciar turno?','Se eliminarán las '+recs.length+' actuaciones de "'+sala+'".',()=>{recs=[];persist();render();toast('Turno vaciado')})};
+$('mNo').onclick=closeAsk;
+$('pdfClose').onclick=()=>$('pdfModal').classList.remove('on');
+$('pdfShareBtn').onclick=()=>{
+  if(pdfFile&&navigator.canShare&&navigator.canShare({files:[pdfFile]}))navigator.share({files:[pdfFile],title:'Parte de servicios'}).catch(()=>{});
+  else toast('Abre el PDF y usa Compartir en Safari',1);
+};
+$('mYes').onclick=()=>{const f=askCb;closeAsk();if(f)f()};
+
+/* Callejero oficial */
+const URL_VIAS='https://mapas.valencia.es/lanzadera/opendata/vias/csv';
+const TIPOS={CL:'Calle',AV:'Avenida',AVDA:'Avenida',PZ:'Plaza',PL:'Plaza',PS:'Paseo',PG:'Paseo',CM:'Camino',RD:'Ronda',TR:'Travesía',GV:'Gran Vía',CR:'Carretera',CTRA:'Carretera',PJ:'Pasaje',CJ:'Callejón',BV:'Bulevar',PQ:'Parque',MU:'Muelle',SD:'Senda',AC:'Acceso',UR:'Urbanización'};
+function fillCalles(){
+  $('calleSel').innerHTML='<option value="">-- Elegir calle del desplegable ('+CALLES.length+') --</option>'+CALLES.map(c=>`<option>${esc(c)}</option>`).join('');
+  $('dlCalle').innerHTML=CALLES.map(c=>`<option value="${esc(c)}">`).join('');
+  $('callesInfo').textContent=CALLES.length+' vías cargadas';
+}
+$('calleSel').onchange=e=>{if(e.target.value)$('calle').value=e.target.value};
+function titulo(t){
+  if(t!==t.toUpperCase())return t;
+  return t.toLowerCase().replace(/(^|[\s(\-\/])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/\b(De|Del|La|Las|Los|El|Y|Dels|Al|En)\b/g,x=>x.toLowerCase()).replace(/^./,c=>c.toUpperCase());
+}
+function parseCSV(t){
+  const first=t.split(/\r?\n/,1)[0],d=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;
+    else if(c===d){row.push(f);f=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}
+    else f+=c;
+  }
+  if(f.length||row.length){row.push(f);rows.push(row)}
+  return rows.filter(r=>r.some(x=>x.trim()!==''));
+}
+function extractCallesFromRows(rows){
+  if(!rows.length)return[];
+  const hdr=rows[0].map(h=>norm(h));
+  const iNom=hdr.findIndex(h=>/^(nom|nombre|via|vial|denominacion|calle|rotulo|etiqueta)/.test(h));
+  const iTipo=hdr.findIndex(h=>/^(tipo|tipovia|clase|tvia|sigla)/.test(h));
+  const start=(iNom>=0||iTipo>=0)?1:0;
+  const out=new Set();
+  for(let r=start;r<rows.length;r++){
+    const row=rows[r];
+    let nom=iNom>=0?(row[iNom]||''):row.find(x=>/[A-Za-zÁÉÍÓÚÜÑàèéíóúüç]{3,}/.test(x))||'';
+    nom=titulo(nom.trim().replace(/\s+/g,' '));
+    if(!nom||nom.length<2)continue;
+    let tipo=iTipo>=0?(row[iTipo]||'').trim().toUpperCase():'';
+    if(TIPOS[tipo])tipo=TIPOS[tipo];
+    else tipo=titulo(tipo);
+    const full=(tipo && !new RegExp('^'+tipo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(nom))?nom+', '+tipo:nom;
+    out.add(full);
+  }
+  return[...out].sort((a,b)=>a.localeCompare(b,'es'));
+}
+function applyCalles(list,msg){
+  if(!list||!list.length){toast('No se encontraron calles en el origen',1);return}
+  CALLES=list;fillCalles();
+  try{localStorage.setItem('calles_vlc_v2',JSON.stringify(CALLES))}catch(e){}
+  toast(msg||(CALLES.length+' calles cargadas'));
+}
+async function cargarCallesOficiales(){
+  $('callesInfo').textContent='Consultando callejero oficial de Valencia...';
+  const urls=[URL_VIAS,'https://api.allorigins.win/raw?url='+encodeURIComponent(URL_VIAS)];
+  for(const u of urls){
+    try{
+      const res=await fetch(u);
+      if(!res.ok)continue;
+      const txt=await res.text();
+      const list=extractCallesFromRows(parseCSV(txt));
+      if(list.length>50){applyCalles(list,'Callejero oficial cargado ('+list.length+' vías)');return}
+    }catch(e){}
+  }
+  $('callesInfo').textContent=CALLES.length+' vías cargadas (sin conexión directa al portal)';
+  toast('No se pudo descargar en línea; puedes usar "Importar archivo"',1);
+}
+$('cargarCalles').onclick=cargarCallesOficiales;
+$('importCalles').onclick=()=>$('fileCalles').click();
+$('fileCalles').onchange=async e=>{
+  const file=e.target.files[0];e.target.value='';if(!file)return;
+  const txt=await file.text();
+  try{
+    const j=JSON.parse(txt);
+    const arr=Array.isArray(j)?j:(j.features||j.data||j.records||[]);
+    const list=arr.map(it=>{
+      const p=it.properties||it;
+      if(typeof p==='string')return titulo(p.trim());
+      return titulo(String(p.nombre||p.nom||p.calle||p.via||p.label||'').trim());
+    }).filter(Boolean);
+    if(list.length){applyCalles([...new Set(list)].sort((a,b)=>a.localeCompare(b,'es')),'Importadas '+list.length+' calles');return}
+  }catch(err){}
+  const list=extractCallesFromRows(parseCSV(txt));
+  applyCalles(list,'Importadas '+list.length+' calles');
+};
+try{const savedC=JSON.parse(localStorage.getItem('calles_vlc_v2')||'null');if(Array.isArray(savedC)&&savedC.length)CALLES=savedC}catch(e){}
+
+/* Unidades */
+$('fu').innerHTML='<option value="">Todas las unidades</option>'+UNIDADES.map(u=>`<option>${esc(u)}</option>`).join('');
+
+/* Reloj e inicio */
+function tick(){
+  const d=new Date();
+  $('clock').textContent=d.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+tick();setInterval(tick,1000);
+$('fecha').value=today();
+$('hi').value=nowHM();
+setInds([]);
+fillCalles();
+load();
+render();
+</script>
+</body>
+</html>

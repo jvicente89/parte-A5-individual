@@ -1,0 +1,16 @@
+{
+  "name": "Parte Operativo Valencia - Turno Noche",
+  "short_name": "Parte Noche VLC",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1119",
+  "theme_color": "#0d1119",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%230d1119'/%3E%3Crect x='24' y='24' width='144' height='144' rx='24' fill='%23151b28' stroke='%233b82f6' stroke-width='6'/%3E%3Ctext x='96' y='112' font-size='54' font-family='Arial,sans-serif' font-weight='bold' fill='%23e8edf6' text-anchor='middle'%3EVLC%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
